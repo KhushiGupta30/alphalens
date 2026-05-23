@@ -1,0 +1,36 @@
+=== ALPHALENS API DESIGN ===
+
+PUBLIC ENDPOINTS (no login needed):
+
+GET  /stock/{ticker}/overview
+     returns: name, current price, % change today, volume, 52w high/low
+
+GET  /stock/{ticker}/technicals
+     returns: date-indexed arrays of OHLCV, RSI, MACD, BB upper/mid/lower, SMA50, SMA200
+
+GET  /stock/{ticker}/signal
+     returns: prediction (UP/DOWN/NEUTRAL), confidence score, top 5 feature importances
+
+GET  /stock/{ticker}/sentiment
+     returns: list of {headline, label, score, date}, 7-day average sentiment score
+
+AUTH ENDPOINTS:
+
+POST /auth/register
+     body:    {email, password}
+     returns: {message: "user created"}
+
+POST /auth/login
+     body:    {email, password}
+     returns: {access_token, token_type: "bearer"}
+
+PROTECTED ENDPOINTS (JWT token required):
+
+GET    /watchlist
+       returns: list of {ticker, added_at}
+
+POST   /watchlist/{ticker}
+       returns: {message: "added"}
+
+DELETE /watchlist/{ticker}
+       returns: {message: "removed"}

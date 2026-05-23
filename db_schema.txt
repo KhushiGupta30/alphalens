@@ -1,0 +1,17 @@
+=== ALPHALENS DATABASE SCHEMA ===
+
+TABLE: users
+  id                → integer, primary key, auto increment
+  email             → string, unique, not null
+  hashed_password   → string, not null
+  created_at        → timestamp, default = current time
+
+TABLE: watchlist
+  id         → integer, primary key, auto increment
+  user_id    → integer, foreign key → users.id, not null
+  ticker     → string, not null
+  added_at   → timestamp, default = current time
+
+RELATIONSHIP:
+  one user → many watchlist entries
+  each watchlist entry belongs to exactly one user
