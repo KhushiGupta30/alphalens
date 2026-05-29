@@ -8,15 +8,16 @@ import {
   getTechnicalSignal,
   addToWatchlist,
   removeFromWatchlist,
+  paperTrade,
   getWatchlist,
 } from "../api";
 import {
   AreaChart, Area, LineChart, Line, BarChart, Bar,
   ComposedChart, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine, Legend, Brush,
+  Tooltip, ResponsiveContainer, ReferenceLine, Legend, Brush, 
 } from "recharts";
 import { ArrowLeft, TrendingUp, TrendingDown, Minus,
-         BookmarkPlus, BookmarkCheck, AlertCircle } from "lucide-react";
+         BookmarkPlus, BookmarkCheck, AlertCircle, ShoppingCart } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -520,6 +521,11 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [techSignal, setTechSignal] = useState(null);
   const [selectedIndicator, setSelectedIndicator] = useState(null);
+  const [showTradeModal, setShowTradeModal] = useState(false);
+const [tradeQty, setTradeQty] = useState(1);
+const [tradeAction, setTradeAction] = useState("BUY");
+const [tradeStatus, setTradeStatus] = useState(null); // null | "success" | "error"
+const [tradeLoading, setTradeLoading] = useState(false);
 
   const [overview, setOverview] = useState(null);
   const [chartData, setChartData] = useState([]);
@@ -532,6 +538,11 @@ export default function DashboardPage() {
 
   // Live price via WebSocket
   const [livePrice, setLivePrice] = useState(null);
+  const currentPrice =
+  livePrice ||
+  overview?.current_price ||
+  overview?.price ||
+  overview?.close;
 
   useEffect(() => {
     if (!ticker) return;
@@ -605,6 +616,25 @@ export default function DashboardPage() {
     return () => ws.close();
   }, [ticker]);
 
+  const handleTrade = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) { navigate("/login"); return; }
+  setTradeLoading(true);
+  setTradeStatus(null);
+  try {
+    await paperTrade(ticker, tradeAction, tradeQty);
+    setTradeStatus("success");
+    setTimeout(() => {
+      setShowTradeModal(false);
+      setTradeStatus(null);
+    }, 1500);
+  } catch (e) {
+    setTradeStatus("error");
+  } finally {
+    setTradeLoading(false);
+  }
+};
+
   const handleWatchlist = async () => {
     const token = localStorage.getItem("token");
     if (!token) { navigate("/login"); return; }
@@ -654,14 +684,109 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
-      <button onClick={handleWatchlist}
-        className="flex items-center gap-2 text-sm border border-gray-200
-                   hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600">
-        {inWatchlist
-          ? <><BookmarkCheck className="w-4 h-4 text-emerald-500" /> Saved</>
-          : <><BookmarkPlus className="w-4 h-4" /> Watchlist</>
-        }
-      </button>
+      <div className="flex items-center gap-2">
+  {/* Paper Trade button */}
+  <div className="relative">
+    <button
+      onClick={() => setShowTradeModal(!showTradeModal)}
+      className="flex items-center gap-2 text-sm border border-gray-200
+                 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600"
+    >
+      <ShoppingCart className="w-4 h-4" /> Paper Trade
+    </button>
+
+    {/* Trade modal */}
+    {showTradeModal && (
+      <div className="absolute right-0 top-10 z-50 w-56 bg-white border border-gray-100
+                      rounded-xl shadow-lg p-4">
+        <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Paper Trade</p>
+
+        {/* BUY / SELL toggle */}
+        <div className="flex gap-1 mb-3">
+          {["BUY", "SELL"].map((a) => (
+            <button
+              key={a}
+              onClick={() => setTradeAction(a)}
+              className={`flex-1 text-sm py-1.5 rounded-lg font-medium transition-colors ${
+                tradeAction === a
+                  ? a === "BUY"
+                    ? "bg-emerald-500 text-white"
+                    : "bg-red-500 text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
+
+        {/* Quantity */}
+        <label className="text-xs text-gray-400 mb-1 block">Quantity</label>
+        <input
+          type="number"
+          min={1}
+          value={tradeQty}
+          onChange={(e) => setTradeQty(Number(e.target.value))}
+          className="w-full bg-gray-50 border border-gray-200 rounded-lg
+                     px-3 py-2 text-sm text-gray-900 focus:outline-none
+                     focus:border-gray-400 mb-3"
+        />
+
+        {/* Price estimate */}
+        {currentPrice && (
+  <p className="text-xs text-gray-400 mb-3">
+    Est. value:{" "}
+    <span className="font-medium text-gray-700">
+      ₹{fmt(currentPrice * tradeQty)}
+    </span>
+  </p>
+)}
+
+        {/* Status messages */}
+        {tradeStatus === "success" && (
+          <p className="text-xs text-emerald-600 mb-2 font-medium">
+            ✓ Trade executed successfully
+          </p>
+        )}
+        {tradeStatus === "error" && (
+          <p className="text-xs text-red-500 mb-2">
+            Trade failed. Try again.
+          </p>
+        )}
+
+        <button
+          onClick={handleTrade}
+          disabled={tradeLoading || tradeQty < 1}
+          className={`w-full text-sm font-medium py-2 rounded-lg transition-colors
+                      disabled:opacity-50 ${
+            tradeAction === "BUY"
+              ? "bg-emerald-500 hover:bg-emerald-400 text-white"
+              : "bg-red-500 hover:bg-red-400 text-white"
+          }`}
+        >
+          {tradeLoading ? "Executing..." : `${tradeAction} ${tradeQty} share${tradeQty > 1 ? "s" : ""}`}
+        </button>
+
+        <button
+          onClick={() => setShowTradeModal(false)}
+          className="w-full text-xs text-gray-400 hover:text-gray-600 mt-2 py-1"
+        >
+          Cancel
+        </button>
+      </div>
+    )}
+  </div>
+
+  {/* Watchlist button */}
+  <button onClick={handleWatchlist}
+    className="flex items-center gap-2 text-sm border border-gray-200
+               hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors text-gray-600">
+    {inWatchlist
+      ? <><BookmarkCheck className="w-4 h-4 text-emerald-500" /> Saved</>
+      : <><BookmarkPlus className="w-4 h-4" /> Watchlist</>
+    }
+  </button>
+</div>
     </header>
 
     <main className="max-w-5xl mx-auto px-4 py-8 space-y-4">
