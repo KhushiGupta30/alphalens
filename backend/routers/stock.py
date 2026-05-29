@@ -33,3 +33,13 @@ def technicals(ticker: str):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/{ticker}/technical-signal")
+def technical_signal(ticker: str):
+    try:
+        from services.technical_signal_service import get_technical_signal
+        return get_technical_signal(resolve_ticker(ticker))
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

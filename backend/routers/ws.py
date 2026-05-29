@@ -14,10 +14,14 @@ async def live_price(websocket: WebSocket, ticker: str):
         while True:
             t = yf.Ticker(resolved)
             info = t.fast_info
+            price = float(info.last_price) if info.last_price else None
+            prev_close = float(info.previous_close) if info.previous_close else None
+            change_pct = round((price - prev_close) / prev_close * 100, 2) if price and prev_close else None
             data = {
                 "ticker": resolved,
-                "price": round(info.last_price, 2) if info.last_price else None,
+                "price": round(price, 2) if price else None,
                 "volume": info.last_volume if info.last_volume else None,
+                "change_pct": change_pct,
             }
             await websocket.send_text(json.dumps(data))
             await asyncio.sleep(5)
