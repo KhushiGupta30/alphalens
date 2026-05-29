@@ -124,7 +124,7 @@ function SignalCard({ data, loading }) {
 
 // ── Sentiment Card ────────────────────────────────────────────────
 
-function SentimentCard({ data, loading }) {
+function SentimentCard({ data, loading, onOpen })  {
   if (loading) return <Skeleton className="h-36" />;
   if (!data) return null;
 
@@ -133,7 +133,10 @@ function SentimentCard({ data, loading }) {
   const isNeg = data.overall_sentiment === "negative";
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-5">
+    <div
+  onClick={onOpen}
+  className="rounded-xl border border-gray-100 bg-white p-5 cursor-pointer hover:border-gray-300 transition-colors"
+>
       <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">News Sentiment</p>
       <div className="flex items-baseline gap-2 mb-2">
         <span className={`text-3xl font-bold ${
@@ -526,6 +529,7 @@ const [tradeQty, setTradeQty] = useState(1);
 const [tradeAction, setTradeAction] = useState("BUY");
 const [tradeStatus, setTradeStatus] = useState(null); // null | "success" | "error"
 const [tradeLoading, setTradeLoading] = useState(false);
+const [showNewsModal, setShowNewsModal] = useState(false);
 
   const [overview, setOverview] = useState(null);
   const [chartData, setChartData] = useState([]);
@@ -795,7 +799,11 @@ const [tradeLoading, setTradeLoading] = useState(false);
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <OverviewCard data={overview} loading={loading} />
         <SignalCard data={signal} loading={loading} />
-        <SentimentCard data={sentiment} loading={loading} />
+        <SentimentCard
+  data={sentiment}
+  loading={loading}
+  onOpen={() => setShowNewsModal(true)}
+/>
       </div>
 
       {/* Indicator selector bar */}
@@ -837,6 +845,79 @@ const [tradeLoading, setTradeLoading] = useState(false);
       <PriceChart data={chartData} loading={loading} />
 
     </main>
+
+    {showNewsModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 max-h-[80vh] overflow-y-auto">
+
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <p className="text-xs text-gray-400 uppercase tracking-widest">
+            News Sentiment
+          </p>
+          <h2 className="text-xl font-semibold text-gray-900 mt-1">
+            {ticker}
+          </h2>
+        </div>
+
+        <button
+          onClick={() => setShowNewsModal(false)}
+          className="text-gray-400 hover:text-gray-700 text-sm"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {sentiment?.headlines?.map((item, i) => {
+          const title = typeof item === "string" ? item : item.title;
+          const source = item?.source || item?.publisher;
+          const url = item?.url;
+          const score = item?.sentiment_score;
+
+          return (
+            <div
+              key={i}
+              className="border border-gray-100 rounded-xl p-4 hover:border-gray-300 transition-colors"
+            >
+              <p className="font-medium text-gray-900 mb-2">
+                {title}
+              </p>
+
+              <div className="flex items-center gap-3 text-xs text-gray-400">
+                {source && <span>{source}</span>}
+
+                {score != null && (
+                  <span className={
+                    score > 0
+                      ? "text-emerald-600"
+                      : score < 0
+                      ? "text-red-500"
+                      : "text-gray-400"
+                  }>
+                    {score > 0 ? "+" : ""}
+                    {score.toFixed(2)}
+                  </span>
+                )}
+              </div>
+
+              {url && (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-blue-500 hover:text-blue-600 mt-2 inline-block"
+                >
+                  Read article →
+                </a>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+)}
   </div>
 );
 }
