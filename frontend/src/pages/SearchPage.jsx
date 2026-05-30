@@ -102,6 +102,7 @@ const handleLogout = () => {
     </div>
     <a href="/portfolio" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Portfolio</a>
     <a href="/watchlist" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Watchlist</a>
+    <a href="/paper" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">PaperTrade</a>
     {token ? (
       <div className="flex items-center gap-3">
         <span className="text-sm text-gray-400">{userEmail}</span>
