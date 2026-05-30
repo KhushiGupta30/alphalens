@@ -101,3 +101,23 @@ def remove_holding(
         return {"message": f"{ticker} removed from portfolio"}
     except Exception as e:
         raise HTTPException(500, str(e))
+    
+
+@router.get("/holdings")
+def get_holdings(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    holdings = db.query(PortfolioHolding).filter(
+        PortfolioHolding.user_id == current_user.id
+    ).all()
+    return {
+        "holdings": [
+            {
+                "ticker": h.ticker,
+                "quantity": h.quantity,
+                "avg_buy_price": h.avg_buy_price,
+            }
+            for h in holdings
+        ]
+    }

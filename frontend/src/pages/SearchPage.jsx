@@ -73,6 +73,14 @@ sensexWs.onmessage = (e) => {
     navigate(`/dashboard/${cleaned}`);
   };
 
+  const token = localStorage.getItem("token");
+const userEmail = localStorage.getItem("email");
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("email");
+  window.location.reload();
+};
+
   return (
     <div className="min-h-screen bg-white flex flex-col" style={{
       backgroundImage: "radial-gradient(circle, #d1d5db 1px, transparent 1px)",
@@ -80,23 +88,35 @@ sensexWs.onmessage = (e) => {
     }}>
 
       {/* Top bar */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-gray-100 bg-white/80 backdrop-blur-sm">
-        <span className="text-base font-semibold text-gray-900 tracking-tight">AlphaLens</span>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              apiStatus === "online" ? "bg-emerald-500" :
-              apiStatus === "offline" ? "bg-red-400" : "bg-yellow-400"
-            }`} />
-            <span className="text-xs text-gray-400">
-              {apiStatus === "online" ? "API online" : apiStatus === "offline" ? "API offline" : "Checking"}
-            </span>
-          </div>
-          <a href="/watchlist" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Watchlist</a>
-          <a href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Login</a>
-          <a href="/register" className="text-sm bg-gray-900 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 transition-colors">Register</a>
-        </div>
-      </header>
+<header className="flex items-center justify-between px-8 py-4 border-b border-gray-100 bg-white/80 backdrop-blur-sm">
+  <span className="text-base font-semibold text-gray-900 tracking-tight">AlphaLens</span>
+  <div className="flex items-center gap-6">
+    <div className="flex items-center gap-1.5">
+      <span className={`w-1.5 h-1.5 rounded-full ${
+        apiStatus === "online" ? "bg-emerald-500" :
+        apiStatus === "offline" ? "bg-red-400" : "bg-yellow-400"
+      }`} />
+      <span className="text-xs text-gray-400">
+        {apiStatus === "online" ? "API online" : apiStatus === "offline" ? "API offline" : "Checking"}
+      </span>
+    </div>
+    <a href="/portfolio" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Portfolio</a>
+    <a href="/watchlist" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Watchlist</a>
+    {token ? (
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-gray-400">{userEmail}</span>
+        <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+          Logout
+        </button>
+      </div>
+    ) : (
+      <div className="flex items-center gap-3">
+        <a href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Login</a>
+        <a href="/register" className="text-sm bg-gray-900 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 transition-colors">Register</a>
+      </div>
+    )}
+  </div>
+</header>
 
       {/* Main */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 pb-24">

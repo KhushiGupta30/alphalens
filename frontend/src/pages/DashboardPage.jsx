@@ -689,6 +689,11 @@ const [showNewsModal, setShowNewsModal] = useState(false);
         </div>
       </div>
       <div className="flex items-center gap-2">
+        <a href="/portfolio"
+    className="text-sm text-gray-500 hover:text-gray-900 transition-colors px-2">
+    My Portfolio
+  </a>
+        
   {/* Paper Trade button */}
   <div className="relative">
     <button
@@ -770,6 +775,13 @@ const [showNewsModal, setShowNewsModal] = useState(false);
         >
           {tradeLoading ? "Executing..." : `${tradeAction} ${tradeQty} share${tradeQty > 1 ? "s" : ""}`}
         </button>
+        {/* View full history link */}
+    
+      <a href="/paper"
+      className="w-full text-xs text-gray-400 hover:text-gray-700 mt-2 py-1 block text-center transition-colors"
+    >
+      View full trade history →
+    </a>
 
         <button
           onClick={() => setShowTradeModal(false)}

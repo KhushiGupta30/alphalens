@@ -16,8 +16,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await loginUser(email, password);
-      localStorage.setItem("token", res.data.access_token);
-      navigate("/");
+localStorage.setItem("token", res.data.access_token);
+localStorage.setItem("email", email);
+navigate("/");
     } catch (err) {
       setError(
         err.response?.data?.detail || "Invalid email or password"
