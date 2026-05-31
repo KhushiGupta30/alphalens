@@ -72,19 +72,27 @@ def get_overview(ticker: str) -> dict:
     if cached:
         return cached
 
-    info = fetch_stock_info(ticker)
-    if not info:
-        raise ValueError(f"Ticker not found: {ticker}")
-
     df = fetch_stock_data(ticker, period="6mo")
     if df.empty:
-        raise ValueError(f"No price data for: {ticker}")
+        raise ValueError(f"Ticker not found: {ticker}")
 
     df = compute_indicators(df)
     latest = df.iloc[-1]
 
+    # Try to get info, but don't fail if it's unavailable
+    info = fetch_stock_info(ticker)
+    
     result = {
-        **info,
+        "ticker": ticker,
+        "name": info.get("name", ticker),
+        "current_price": info.get("current_price") or round(float(latest["Close"]), 2),
+        "previous_close": info.get("previous_close"),
+        "percent_change": info.get("percent_change"),
+        "volume": info.get("volume"),
+        "week_52_high": info.get("week_52_high"),
+        "week_52_low": info.get("week_52_low"),
+        "market_cap": info.get("market_cap"),
+        "pe_ratio": info.get("pe_ratio"),
         "rsi": round(float(latest["RSI"]), 2) if pd.notna(latest["RSI"]) else None,
         "macd": round(float(latest["MACD"]), 4) if pd.notna(latest["MACD"]) else None,
         "macd_signal": round(float(latest["MACD_signal"]), 4) if pd.notna(latest["MACD_signal"]) else None,
