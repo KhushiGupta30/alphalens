@@ -1,22 +1,33 @@
 import feedparser
+import requests
+import os
 
 BLOCKED_SOURCES = ["facebook.com", "twitter.com", "instagram.com", "reddit.com"]
 
-# lazy load
-_finbert = None
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_API_URL = "https://api-inference.huggingface.co/models/ProsusAI/finbert"
 
-def get_finbert():
-    global _finbert
-    if _finbert is None:
-        from transformers import pipeline
-        print("Loading FinBERT model...")
-        _finbert = pipeline(
-            "text-classification",
-            model="ProsusAI/finbert",
-            return_all_scores=False
+
+def query_finbert(texts: list) -> list:
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    response = requests.post(
+        HF_API_URL,
+        headers=headers,
+        json={"inputs": texts},
+        timeout=30
+    )
+    if response.status_code == 503:
+        # Model is loading on HF servers — wait and retry once
+        import time
+        time.sleep(20)
+        response = requests.post(
+            HF_API_URL,
+            headers=headers,
+            json={"inputs": texts},
+            timeout=30
         )
-        print("FinBERT ready.")
-    return _finbert
+    response.raise_for_status()
+    return response.json()
 
 
 def fetch_headlines(company_name: str) -> list:
@@ -52,21 +63,30 @@ def get_sentiment(company_name: str) -> dict:
     if cached:
         return cached
 
-    finbert = get_finbert()
     headlines = fetch_headlines(company_name)
     if not headlines:
         return {"error": "No headlines found", "company": company_name}
 
+    titles = [h["title"] for h in headlines]
+
+    try:
+        hf_results = query_finbert(titles)
+    except Exception as e:
+        print(f"HuggingFace API error: {e}")
+        return {"error": "Sentiment analysis unavailable", "company": company_name}
+
     results = []
-    for h in headlines:
+    for i, h in enumerate(headlines):
         try:
-            output = finbert(h['title'])[0]
+            # HF returns list of scores per input — pick highest
+            scores = hf_results[i]
+            top = max(scores, key=lambda x: x["score"])
             results.append({
-                "title": h['title'],
-                "source": h['source'],
-                "published_at": h['published_at'],
-                "sentiment": output['label'],
-                "confidence": round(output['score'], 3)
+                "title": h["title"],
+                "source": h["source"],
+                "published_at": h["published_at"],
+                "sentiment": top["label"].lower(),
+                "confidence": round(top["score"], 3)
             })
         except Exception:
             continue
@@ -76,7 +96,7 @@ def get_sentiment(company_name: str) -> dict:
 
     sentiment_map = {"positive": 1, "negative": -1, "neutral": 0}
     aggregate = sum(
-        sentiment_map[r['sentiment']] * r['confidence'] for r in results
+        sentiment_map.get(r["sentiment"], 0) * r["confidence"] for r in results
     ) / len(results)
 
     overall = "BULLISH" if aggregate > 0.1 else ("BEARISH" if aggregate < -0.1 else "NEUTRAL")
