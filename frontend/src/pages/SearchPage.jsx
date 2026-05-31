@@ -41,8 +41,8 @@ export default function SearchPage() {
       .then(() => setApiStatus("online"))
       .catch(() => setApiStatus("offline"));
 
-    const niftyWs = new WebSocket("ws://localhost:8000/ws/live/%5ENSEI");
-    const sensexWs = new WebSocket("ws://localhost:8000/ws/live/%5EBSESN");
+    const niftyWs = new WebSocket("wss://alphalens-api-ekzw.onrender.com/ws/live/%5ENSEI");
+    const sensexWs = new WebSocket("wss://alphalens-api-ekzw.onrender.com/ws/live/%5EBSESN");
 
     niftyWs.onmessage = (e) => {
     const data = JSON.parse(e.data);

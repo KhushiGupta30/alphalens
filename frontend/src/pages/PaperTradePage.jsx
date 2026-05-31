@@ -24,7 +24,7 @@ function useLivePrices(tickers) {
     socketsRef.current = {};
 
     tickers.forEach((ticker) => {
-      const ws = new WebSocket(`ws://localhost:8000/ws/live/${ticker}`);
+      const ws = new WebSocket(`wss://alphalens-api-ekzw.onrender.com/ws/live/${ticker}`);
       ws.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);

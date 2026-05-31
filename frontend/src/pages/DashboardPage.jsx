@@ -610,7 +610,7 @@ const [showNewsModal, setShowNewsModal] = useState(false);
     
 
     // WebSocket for live price
-    const ws = new WebSocket(`ws://localhost:8000/ws/live/${encodeURIComponent(ticker)}`);
+    const ws = new WebSocket(`wss://alphalens-api-ekzw.onrender.com/ws/live/${encodeURIComponent(ticker)}`);
     ws.onmessage = (e) => {
       const d = JSON.parse(e.data);
       if (d.price) setLivePrice(d.price);
