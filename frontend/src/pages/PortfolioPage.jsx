@@ -526,11 +526,18 @@ export default function PortfolioPage() {
         )}
 
         {loadingAnalysis && holdings.length >= 2 && (
-          <div className="space-y-3">
-            <Skeleton className="h-20" />
-            <Skeleton className="h-56" />
-          </div>
-        )}
+  <div className="space-y-3">
+    <div className="bg-white border border-gray-100 rounded-2xl p-5 flex items-center gap-4">
+      <div className="w-8 h-8 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin flex-shrink-0" />
+      <div>
+        <p className="text-sm font-medium text-gray-700">Running portfolio analysis...</p>
+        <p className="text-xs text-gray-400 mt-0.5">Fetching live prices, ML signals, and sentiment. This takes ~60s on first load.</p>
+      </div>
+    </div>
+    <Skeleton className="h-20" />
+    <Skeleton className="h-56" />
+  </div>
+)}
       </main>
 
       {/* Modals */}
