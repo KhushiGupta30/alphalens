@@ -5,27 +5,15 @@ import os
 BLOCKED_SOURCES = ["facebook.com", "twitter.com", "instagram.com", "reddit.com"]
 
 HF_TOKEN = os.getenv("HF_TOKEN")
-HF_API_URL = "https://api-inference.huggingface.co/models/ProsusAI/finbert"
+HF_API_URL = "https://khushig30-alphalens-finbert.hf.space/analyze"
 
 
 def query_finbert(texts: list) -> list:
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     response = requests.post(
         HF_API_URL,
-        headers=headers,
         json={"inputs": texts},
-        timeout=30
+        timeout=60
     )
-    if response.status_code == 503:
-        # Model is loading on HF servers — wait and retry once
-        import time
-        time.sleep(20)
-        response = requests.post(
-            HF_API_URL,
-            headers=headers,
-            json={"inputs": texts},
-            timeout=30
-        )
     response.raise_for_status()
     return response.json()
 
