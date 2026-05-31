@@ -117,32 +117,73 @@ function HoldingsTable({ holdings, livePrices }) {
           const changePct    = liveData?.change_pct;
           const isUp         = pnl != null ? pnl >= 0 : null;
 
+          // Cost breakdown
+          const marketPrice  = h.avg_price; // price at time of trade
+          const slippage     = Math.round(marketPrice * 0.001 * 100) / 100;
+          const executedPrice = Math.round((marketPrice + slippage) * 100) / 100;
+          const fees         = Math.round(executedPrice * h.quantity * 0.001 * 100) / 100;
+
           return (
-            <div key={ticker} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">{ticker.split(".")[0]}</span>
-                  {changePct != null && (
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                      changePct >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
-                    }`}>
-                      {changePct >= 0 ? "+" : ""}{changePct}%
-                    </span>
+            <div key={ticker}>
+              <div className="flex items-center justify-between py-3 border-b border-gray-50">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">{ticker.split(".")[0]}</span>
+                    {changePct != null && (
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                        changePct >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
+                      }`}>
+                        {changePct >= 0 ? "+" : ""}{changePct}%
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {h.quantity} shares · avg ₹{fmt(h.avg_price)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-gray-900 tabular-nums">
+                    {currentVal != null ? `₹${fmt(currentVal)}` : "—"}
+                  </p>
+                  {pnl != null && (
+                    <p className={`text-xs tabular-nums ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+                      {pnl >= 0 ? "+" : ""}₹{fmt(Math.abs(pnl))}
+                    </p>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {h.quantity} shares · avg ₹{fmt(h.avg_price)}
-                </p>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900 tabular-nums">
-                  {currentVal != null ? `₹${fmt(currentVal)}` : "—"}
-                </p>
-                {pnl != null && (
-                  <p className={`text-xs tabular-nums ${isUp ? "text-emerald-600" : "text-red-500"}`}>
-                    {pnl >= 0 ? "+" : ""}₹{fmt(Math.abs(pnl))}
-                  </p>
-                )}
+
+              {/* P&L Breakdown card */}
+              <div className="bg-gray-50 rounded-xl px-4 py-3 mb-2 mt-1">
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">P&L Breakdown</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Market price</span>
+                    <span className="text-gray-700 tabular-nums">₹{fmt(marketPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Slippage (0.1%)</span>
+                    <span className="text-red-400 tabular-nums">−₹{fmt(slippage)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Executed at</span>
+                    <span className="text-gray-700 tabular-nums">₹{fmt(executedPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Fees (0.1%)</span>
+                    <span className="text-red-400 tabular-nums">−₹{fmt(fees)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Current price</span>
+                    <span className="text-gray-700 tabular-nums">₹{fmt(displayPrice)}</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span className="text-gray-500">Net P&L</span>
+                    <span className={`tabular-nums ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+                      {pnl != null ? `${pnl >= 0 ? "+" : ""}₹${fmt(Math.abs(pnl))}` : "—"}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           );
