@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 from pypfopt.efficient_frontier import EfficientFrontier
 from pypfopt import risk_models, expected_returns
+from core.cache import get_cache, set_cache
 
 # ── Company name map for sentiment lookup ─────────────────────────────────────
 COMPANY_MAP = {
@@ -179,13 +180,20 @@ def analyze_and_optimize(holdings: list) -> dict:
     # ── Live prices ───────────────────────────────────────────────
     live_prices = {}
     for ticker in tickers:
+        cache_key = f"live_price:{ticker}"
+        cached = get_cache(cache_key)
+        if cached:
+            live_prices[ticker] = cached
+            continue
         try:
-            info  = yf.Ticker(ticker).fast_info
+            info = yf.Ticker(ticker).fast_info
             price = info.last_price
-            live_prices[ticker] = round(float(price), 2) if price else None
+            price_val = round(float(price), 2) if price else None
+            live_prices[ticker] = price_val
+            if price_val:
+                set_cache(cache_key, price_val, ttl=300)  # 5 min cache
         except Exception:
             live_prices[ticker] = None
-
     # ── Current portfolio value + PnL ─────────────────────────────
     current_values = {}
     pnl_per_stock  = {}
