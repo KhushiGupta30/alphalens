@@ -69,87 +69,75 @@ def _optimize(mu, S, n: int):
 
 
 def _collect_tilts(tickers: list) -> tuple[dict, dict]:
-    """
-    For each ticker, call ml_service.get_signal, sentiment_service.get_sentiment,
-    and technical_signal_service.get_technical_signal.
-    Returns:
-        tilts   — {ticker: float}  total return tilt to apply
-        reasons — {ticker: list[str]}  human-readable explanation
-    """
-    # Import here to avoid circular imports at module load time
     from services.ml_service import get_signal
     from services.sentiment_service import get_sentiment
     from services.technical_signal_service import get_technical_signal
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    tilts   = {}
+    tilts = {}
     reasons = {}
 
-    for ticker in tickers:
-        tilt         = 0.0
+    def process_ticker(ticker):
+        tilt = 0.0
         ticker_reasons = []
 
-        # ── 1. ML signal ──────────────────────────────────────────
+        # ML signal
         try:
             ml = get_signal(ticker)
-            signal     = ml.get("signal", "NEUTRAL")
+            signal = ml.get("signal", "NEUTRAL")
             confidence = ml.get("confidence", 0.5)
-
             if signal == "UP":
                 t = ML_TILT_UP * confidence
                 tilt += t
-                ticker_reasons.append(
-                    f"ML model predicts UP (confidence {confidence:.0%}) → return tilted +{t*100:.2f}%"
-                )
+                ticker_reasons.append(f"ML model predicts UP (confidence {confidence:.0%}) → return tilted +{t*100:.2f}%")
             elif signal == "DOWN":
                 t = ML_TILT_DOWN * confidence
                 tilt += t
-                ticker_reasons.append(
-                    f"ML model predicts DOWN (confidence {confidence:.0%}) → return tilted {t*100:.2f}%"
-                )
+                ticker_reasons.append(f"ML model predicts DOWN (confidence {confidence:.0%}) → return tilted {t*100:.2f}%")
             else:
                 ticker_reasons.append("ML signal: NEUTRAL — no tilt applied")
         except Exception as e:
             ticker_reasons.append(f"ML signal unavailable ({e})")
 
-        # ── 2. Sentiment ──────────────────────────────────────────
+        # Sentiment
         try:
             company = COMPANY_MAP.get(ticker, ticker.replace(".NS", "").replace(".BO", ""))
-            sent    = get_sentiment(company)
-            agg     = sent.get("aggregate_score", 0)
+            sent = get_sentiment(company)
+            agg = sent.get("aggregate_score", 0)
             overall = sent.get("overall_sentiment", "NEUTRAL")
-            t       = round(agg * SENTIMENT_MAX, 4)
-            tilt   += t
-
+            t = round(agg * SENTIMENT_MAX, 4)
+            tilt += t
             if abs(agg) > 0.1:
                 direction = "+" if t >= 0 else ""
-                ticker_reasons.append(
-                    f"News sentiment {overall} (score {agg:+.2f}) → return tilted {direction}{t*100:.2f}%"
-                )
+                ticker_reasons.append(f"News sentiment {overall} (score {agg:+.2f}) → return tilted {direction}{t*100:.2f}%")
             else:
                 ticker_reasons.append(f"News sentiment NEUTRAL (score {agg:+.2f}) — minimal tilt")
         except Exception as e:
             ticker_reasons.append(f"Sentiment unavailable ({e})")
 
-        # ── 3. Technical signal ───────────────────────────────────
+        # Technical signal
         try:
-            tech  = get_technical_signal(ticker)
+            tech = get_technical_signal(ticker)
             score = tech.get("score", 0)
             decision = tech.get("decision", "HOLD")
             capped_score = max(-5, min(5, score))
-            t     = round(capped_score * TECHNICAL_PER_PT, 4)
+            t = round(capped_score * TECHNICAL_PER_PT, 4)
             tilt += t
-
             tech_reasons = tech.get("reasons", [])
             summary = "; ".join(tech_reasons[:2]) if tech_reasons else "no detail"
             direction = "+" if t >= 0 else ""
-            ticker_reasons.append(
-                f"Technical signal {decision} (score {score:+d}: {summary}) → return tilted {direction}{t*100:.2f}%"
-            )
+            ticker_reasons.append(f"Technical signal {decision} (score {score:+d}: {summary}) → return tilted {direction}{t*100:.2f}%")
         except Exception as e:
             ticker_reasons.append(f"Technical signal unavailable ({e})")
 
-        tilts[ticker]   = round(tilt, 4)
-        reasons[ticker] = ticker_reasons
+        return ticker, round(tilt, 4), ticker_reasons
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {executor.submit(process_ticker, ticker): ticker for ticker in tickers}
+        for future in as_completed(futures):
+            ticker, tilt, ticker_reasons = future.result()
+            tilts[ticker] = tilt
+            reasons[ticker] = ticker_reasons
 
     return tilts, reasons
 
