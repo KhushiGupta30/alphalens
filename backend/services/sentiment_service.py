@@ -9,13 +9,18 @@ HF_API_URL = "https://khushig30-alphalens-finbert.hf.space/analyze"
 
 
 def query_finbert(texts: list) -> list:
-    response = requests.post(
-        HF_API_URL,
-        json={"inputs": texts},
-        timeout=60
-    )
-    response.raise_for_status()
-    return response.json()
+    results = []
+    for text in texts:
+        response = requests.post(
+            HF_API_URL,
+            json={"inputs": [text]},
+            timeout=60
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        results.append(data)
+    return results
 
 
 def fetch_headlines(company_name: str) -> list:
