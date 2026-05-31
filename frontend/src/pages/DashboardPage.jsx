@@ -585,7 +585,10 @@ const [showNewsModal, setShowNewsModal] = useState(false);
     }));
     setChartData(formatted);
 
-    const company = ovRes.data?.name || ovRes.data?.company_name || ticker.replace(".NS", "");
+    const tickerBase = ticker.replace(".NS", "").replace(".BO", "");
+const company = (ovRes.data?.name && ovRes.data.name !== ticker) 
+  ? ovRes.data.name 
+  : tickerBase;
     return getSentiment(encodeURIComponent(company)).catch(() => ({ data: null }));
   })
   .then((sentRes) => {
